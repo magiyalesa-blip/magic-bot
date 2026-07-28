@@ -1,12 +1,15 @@
 import asyncio
 import calendar
 import logging
+import os
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters.callback_data import CallbackData
 from aiogram.filters.command import Command
 from aiogram.types import InlineKeyboardButton, BotCommand, BotCommandScopeDefault, WebAppInfo, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from fastapi import FastAPI
+import uvicorn
 
 # --- НАСТРОЙКИ ---
 # ==========================================
@@ -21,6 +24,12 @@ logging.basicConfig(
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    return {"status": "Bot is running!"}
 
 
 # --- НАСТРОЙКА КНОПКИ "ЗАПУСТИТЬ" В ТЕЛЕГРАМ ---
@@ -200,13 +209,6 @@ def get_back_to_faq_button():
     return builder.as_markup()
 
 
-def get_back_to_main_button():
-    """Кнопка возврата в главное меню"""
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_main"))
-    return builder.as_markup()
-
-
 # --- ОБРАБОТЧИКИ СООБЩЕНИЙ И CALLBACK ---
 
 @dp.message(Command("start"))
@@ -336,18 +338,6 @@ async def process_rule_photo(callback: types.CallbackQuery):
 
 
 # --- ДОПОЛНИТЕЛЬНЫЕ РАЗДЕЛЫ МЕНЮ ---
-
-@dp.callback_query(F.data == "my_books")
-async def process_my_books(callback: types.CallbackQuery):
-    text = (
-        "📋 <b>Информация о ваших бронированиях</b>\n\n"
-        "Чтобы уточнить статус вашего бронирования, внести изменения или получить подтверждение, пожалуйста, укажите ваше имя и номер телефона администратору.\n\n"
-        "📞 <b>Отдел бронирования:</b>\n"
-        "Телефон / WhatsApp / Telegram: <b><a href='tel:+375297200003'>+375 (29) 720-00-03</a></b>\n"
-        "🌐 <b>Сайт:</b> <a href='https://bronirovanie.magiyalesa.com/'>bronirovanie.magiyalesa.com</a>"
-    )
-    await callback.message.edit_text(text, reply_markup=get_back_to_main_button(), parse_mode="HTML")
-
 
 @dp.callback_query(F.data == "services")
 async def process_services(callback: types.CallbackQuery):
@@ -515,6 +505,7 @@ async def process_faq_nearby(callback: types.CallbackQuery):
 
 @dp.callback_query(F.data == "promo")
 async def process_promo(callback: types.CallbackQuery):
+    await callback.message.delete()
     text = (
         "🎁 <b>Специальные предложения усадьбы «Магия леса»</b>\n\n"
         "🎂 <b>СКИДКА 10% В ДЕНЬ РОЖДЕНИЯ</b>\n"
@@ -535,13 +526,13 @@ async def process_promo(callback: types.CallbackQuery):
     builder.row(InlineKeyboardButton(text="🎟 Забронировать по акции", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в главное меню", callback_data="back_main"))
 
-    await callback.message.delete()
     await callback.message.answer(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     await callback.answer()
 
 
 @dp.callback_query(F.data == "location")
 async def process_location(callback: types.CallbackQuery):
+    await callback.message.delete()
     text = (
         "📍 <b>Как к нам добраться</b>\n\n"
         "Усадьба «Магия Леса» находится внутри заповедника, в 7 км от центрального входа в д. Каменюки.\n\n"
@@ -552,10 +543,9 @@ async def process_location(callback: types.CallbackQuery):
     )
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="🗺 Маршрут в Яндекс.Навигатор", url="https://yandex.ru/maps/?rtext=~52.527526,23.860374~52.528997,23.879703"))
-    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Google Maps", url="https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.527526,23.860374"))
+    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Google Maps", url="https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.527526,23.860374&travelmode=driving"))
     builder.row(InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_main"))
 
-    await callback.message.delete()
     await callback.message.answer(text=text, reply_markup=builder.as_markup(), parse_mode="HTML")
     await callback.answer()
 
@@ -631,11 +621,20 @@ async def process_calendar(callback: types.CallbackQuery, callback_data: Calenda
         await callback.answer()
 
 
-# --- ЗАПУСК БОТА ---
+# --- ЗАПУСК БОТА И ВЕБ-СЕРВЕРА ---
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await set_bot_commands(bot)
-    await dp.start_polling(bot)
+    
+    # Запускаем поллинг бота и веб-сервер Uvicorn параллельно
+    port = int(os.environ.get("PORT", 8000))
+    config = uvicorn.Config(app=app, host="0.0.0.0", port=port, log_level="info")
+    server = uvicorn.Server(config)
+
+    await asyncio.gather(
+        dp.start_polling(bot),
+        server.serve()
+    )
 
 
 if __name__ == "__main__":
