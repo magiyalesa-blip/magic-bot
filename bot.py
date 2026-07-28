@@ -621,21 +621,24 @@ async def process_calendar(callback: types.CallbackQuery, callback_data: Calenda
         await callback.answer()
 
 
-# --- ЗАПУСК БОТА И ВЕБ-СЕРВЕРА ---
-async def main():
+# --- ЗАПУСК БОТА ЧЕРЕЗ СОБЫТИЕ СЕРВЕРА ---
+
+@app.on_event("startup")
+async def on_startup():
+    """Эта функция автоматически сработает при старте сервера на Render"""
     await bot.delete_webhook(drop_pending_updates=True)
     await set_bot_commands(bot)
     
-    # Запускаем поллинг бота и веб-сервер Uvicorn параллельно
-    port = int(os.environ.get("PORT", 8000))
-    config = uvicorn.Config(app=app, host="0.0.0.0", port=port, log_level="info")
-    server = uvicorn.Server(config)
-
-    await asyncio.gather(
-        dp.start_polling(bot),
-        server.serve()
-    )
+    # Запускаем поллинг бота в фоновом режиме, чтобы не блокировать веб-сервер
+    asyncio.create_task(dp.start_polling(bot))
+    logging.info("Бот успешно запущен в фоновом режиме!")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # Этот блок нужен только если вы запускаете бота локально с компьютера через python bot.py
+    async def local_main():
+        await bot.delete_webhook(drop_pending_updates=True)
+        await set_bot_commands(bot)
+        await dp.start_polling(bot)
+
+    asyncio.run(local_main())
