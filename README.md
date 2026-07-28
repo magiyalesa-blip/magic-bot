@@ -1,2 +1,0 @@
-# magic-bot
-magic-bot
