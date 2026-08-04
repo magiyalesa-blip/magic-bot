@@ -1,12 +1,15 @@
 import asyncio
 import calendar
 import logging
+import os
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters.callback_data import CallbackData
 from aiogram.filters.command import Command
 from aiogram.types import InlineKeyboardButton, BotCommand, BotCommandScopeDefault, WebAppInfo, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from fastapi import FastAPI
+import uvicorn
 
 # --- НАСТРОЙКИ ---
 # ==========================================
@@ -21,6 +24,21 @@ logging.basicConfig(
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
+
+# --- ОБЯЗАТЕЛЬНАЯ СТРОКА ДЛЯ RENDER ---
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    return {"status": "Bot is active!"}
+
+
+@app.on_event("startup")
+async def on_startup():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await set_bot_commands(bot)
+    asyncio.create_task(dp.start_polling(bot))
 
 
 # --- НАСТРОЙКА КНОПКИ "ЗАПУСТИТЬ" В ТЕЛЕГРАМ ---
@@ -661,4 +679,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("bot:app", host="0.0.0.0", port=port)
