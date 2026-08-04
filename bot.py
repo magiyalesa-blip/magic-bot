@@ -1,15 +1,12 @@
 import asyncio
 import calendar
 import logging
-import os
 from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.filters.callback_data import CallbackData
 from aiogram.filters.command import Command
 from aiogram.types import InlineKeyboardButton, BotCommand, BotCommandScopeDefault, WebAppInfo, FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from fastapi import FastAPI
-import uvicorn
 
 # --- НАСТРОЙКИ ---
 # ==========================================
@@ -24,12 +21,6 @@ logging.basicConfig(
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
-app = FastAPI()
-
-
-@app.get("/")
-async def root():
-    return {"status": "Bot is running!"}
 
 
 # --- НАСТРОЙКА КНОПКИ "ЗАПУСТИТЬ" В ТЕЛЕГРАМ ---
@@ -120,25 +111,25 @@ def get_main_menu():
     """Главное меню бота (логичное и адаптированное под мобайл)"""
     builder = InlineKeyboardBuilder()
 
-    # 1 ряд (Критическая конверсия - приоритет)
-    builder.row(InlineKeyboardButton(text="🏡 Свободные дома и цены", callback_data="check_dates"))
+    # 1 ряд (Частые вопросы - на первое место)
+    builder.row(InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu"))
 
-    # 2 ряд (Услуги - что мы предлагаем)
+    # 2 ряд (Прямой переход к бронированию и свободным домам через WebApp)
+    builder.row(InlineKeyboardButton(text="🏡 Свободные дома, цены, бронирование", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
+
+    # 3 ряд (Услуги - что мы предлагаем)
     builder.row(InlineKeyboardButton(text="🌿 Услуги и Баня", callback_data="services"))
 
-    # 3 ряд (Акции - продвижение)
+    # 4 ряд (Акции - продвижение)
     builder.row(InlineKeyboardButton(text="🔥 Акции", callback_data="promo"))
 
-    # 4 ряд (Условия бронирования - важно прочитать перед)
+    # 5 ряд (Условия бронирования)
     builder.row(InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"))
 
-    # 5 ряд (FAQ и навигация)
-    builder.row(
-        InlineKeyboardButton(text="❓ Частые вопросы", callback_data="faq_menu"),
-        InlineKeyboardButton(text="📍 Где мы находимся", callback_data="location")
-    )
+    # 6 ряд (Навигация)
+    builder.row(InlineKeyboardButton(text="📍 Где мы находимся", callback_data="location"))
 
-    # 6 ряд (Сайт и связь с администратором)
+    # 7 ряд (Сайт и связь с администратором)
     builder.row(
         InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://magiyalesa.com/"),
         InlineKeyboardButton(text="📞 Связаться с менеджером", url="https://t.me/+375297200003")
@@ -152,6 +143,7 @@ def get_rules_menu():
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="💳 Правила бронирования и предоплата", callback_data="rule_booking"))
     builder.row(InlineKeyboardButton(text="🏡 Правила проживания", callback_data="rule_living"))
+    builder.row(InlineKeyboardButton(text="👥 Отдых большой компанией", callback_data="rule_big_company"))
     builder.row(InlineKeyboardButton(text="🐾 Проживание с животными", callback_data="rule_animals"))
     builder.row(InlineKeyboardButton(text="📸 Проведение фотосессий", callback_data="rule_photo"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
@@ -196,7 +188,7 @@ def get_faq_menu():
     builder.row(InlineKeyboardButton(text="🕒 Время заезда и выезда", callback_data="faq_time"))
     builder.row(InlineKeyboardButton(text="💳 Условия оплаты", callback_data="faq_payment"))
     builder.row(InlineKeyboardButton(text="🏡 Об усадьбе и территории", callback_data="faq_about"))
-    builder.row(InlineKeyboardButton(text="🍽 Питание и кухня", callback_data="faq_food"))
+    builder.row(InlineKeyboardButton(text="🍽 Питание, магазины, рестораны", callback_data="faq_food"))
     builder.row(InlineKeyboardButton(text="📍 Что рядом", callback_data="faq_nearby"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="back_main"))
     return builder.as_markup()
@@ -206,6 +198,13 @@ def get_back_to_faq_button():
     """Кнопка возврата в меню FAQ"""
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="⬅️ Назад к вопросам", callback_data="faq_menu"))
+    return builder.as_markup()
+
+
+def get_back_to_main_button():
+    """Кнопка возврата в главное меню"""
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_main"))
     return builder.as_markup()
 
 
@@ -313,6 +312,18 @@ async def process_rule_living(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=get_back_to_rules_button(), parse_mode="HTML")
 
 
+@dp.callback_query(F.data == "rule_big_company")
+async def process_rule_big_company(callback: types.CallbackQuery):
+    text = (
+        "👥 <b>Отдых большой компанией:</b>\n\n"
+        "• Если вы планируете поездку большой компанией (например, 6–9 человек), система при выборе общего числа гостей может ограничивать выбор.\n"
+        "• Однако вы можете с легкостью арендовать несколько уютных домов, расположенных рядом друг с другом!\n"
+        "• Для этого в модуле бронирования указывайте меньшее количество гостей (например, до 3 человек на один дом), подбирайте и бронируйте несколько свободных домиков параллельно.\n\n"
+        "💡 <i>Например: компания из 9 человек может с комфортом разместиться в 3 домах по 3 человека, арендованных рядом.</i>"
+    )
+    await callback.message.edit_text(text, reply_markup=get_back_to_rules_button(), parse_mode="HTML")
+
+
 @dp.callback_query(F.data == "rule_animals")
 async def process_rule_animals(callback: types.CallbackQuery):
     text = (
@@ -338,6 +349,18 @@ async def process_rule_photo(callback: types.CallbackQuery):
 
 
 # --- ДОПОЛНИТЕЛЬНЫЕ РАЗДЕЛЫ МЕНЮ ---
+
+@dp.callback_query(F.data == "my_books")
+async def process_my_books(callback: types.CallbackQuery):
+    text = (
+        "📋 <b>Информация о ваших бронированиях</b>\n\n"
+        "Чтобы уточнить статус вашего бронирования, внести изменения или получить подтверждение, пожалуйста, укажите ваше имя и номер телефона администратору.\n\n"
+        "📞 <b>Отдел бронирования:</b>\n"
+        "Телефон / WhatsApp / Telegram: <b><a href='tel:+375297200003'>+375 (29) 720-00-03</a></b>\n"
+        "🌐 <b>Сайт:</b> <a href='https://bronirovanie.magiyalesa.com/'>bronirovanie.magiyalesa.com</a>"
+    )
+    await callback.message.edit_text(text, reply_markup=get_back_to_main_button(), parse_mode="HTML")
+
 
 @dp.callback_query(F.data == "services")
 async def process_services(callback: types.CallbackQuery):
@@ -452,7 +475,7 @@ async def process_faq_payment(callback: types.CallbackQuery):
         "🔄 При отмене или переносе брони предоплата не возвращается, но сохраняется за вами для переноса даты.\n"
         "📅 Перенести бронь на другую дату можно 1 (один) раз на срок не более 3 месяцев (при наличии свободных мест).\n"
         "🚫 Перенос менее чем за 7 дней до заезда невозможен.\n\n"
-        "💵 <b>Обратите внимание:</b> окончательный расчет за проживание осуществляется непосредственно при заселении, наличными в белорусских рублях (BYN)."
+        "💵 <b>Обратите внимание:</b> окончательный расчет за проживание осуществляется непосредственно при заселении, <b>наличными в белорусских рублях (BYN)</b>. Поэтому гостям из РФ убедительная просьба обменять деньги в обменных пунктах на наличные белорусские рубли заранее в полном объёме."
     )
     await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
 
@@ -461,9 +484,14 @@ async def process_faq_payment(callback: types.CallbackQuery):
 async def process_faq_about(callback: types.CallbackQuery):
     text = (
         "🏡 <b>Об усадьбе и территории</b>\n\n"
-        "Дома оборудованы всем необходимым для комфортного проживания. В стоимость включены: полотенца, тапочки, средства гигиены.\n\n"
+        "Усадьба <b>«Магия леса»</b> в самом сердце Беловежской пущи — это уникальное сочетание комфорта и дикой природы. "
+        "Расположенная в уединенном месте на опушке леса, на большой ухоженной территории, она предлагает гостям возможность насладиться атмосферой одного из последних первозданных лесов Европы.\n\n"
+        "Основная идея базы отдыха заключается в том, чтобы предоставить комфортную и атмосферную обстановку, гармонично сочетающуюся с природным окружением. "
+        "Здесь вас ожидают <b>5 домов</b> и <b>4 уютных глэмпинга</b>, полностью подготовленные для вашего отдыха.\n\n"
+        "🏠 <b>Что включено в стоимость:</b>\n"
+        "Дома и глэмпинги оборудованы всем необходимым. В стоимость входят: чай, постельное бельё, посуда, полотенца, тапочки, средства гигиены.\n\n"
         "🌲 <b>На территории к вашим услугам бесплатно:</b>\n"
-        "Террасы, мангалы и принадлежности (у каждого дома), бассейн, батут, детская площадка, прогулочные зоны, настольный теннис, волейбол, футбол, бадминтон, прокат велосипедов и парковка для авто.\n\n"
+        "Террасы, мангалы и принадлежности (у каждого дома), батут, детская площадка, прогулочные зоны, настольный теннис, волейбол, футбол, бадминтон, прокат велосипедов и парковка для авто.\n\n"
         "🧖‍♀️ <b>Дополнительные услуги:</b>\n"
         "Вы можете заказать баню, купели и другие активности. Подробнее ознакомиться с ними можно по кнопке ниже."
     )
@@ -476,11 +504,14 @@ async def process_faq_about(callback: types.CallbackQuery):
 @dp.callback_query(F.data == "faq_food")
 async def process_faq_food(callback: types.CallbackQuery):
     text = (
-        "🍽 <b>Питание и кухня</b>\n\n"
-        "Мы придерживаемся формата самообслуживания. В каждом доме есть полноценная оборудованная кухня со всей необходимой посудой, а также базовые чай и кофе. Вы можете готовить любимые блюда прямо в доме или использовать мангальные зоны на свежем воздухе.\n\n"
-        "🛒 <b>Инфраструктура:</b>\n"
-        "Рядом в д. Каменюки есть рестораны и кафе, а также магазины, где можно купить всё необходимое.\n\n"
-        "💡 <b>Совет:</b> несмотря на наличие магазинов, мы рекомендуем приобретать основные продукты для отдыха заранее."
+        "🍽 <b>Питание, магазины, рестораны</b>\n\n"
+        "На данный момент на усадьбе питание не предоставляется. В каждом доме есть полноценная оборудованная кухня со всей необходимой посудой, а также чай и кофе. Вы можете готовить любимые блюда прямо в доме или использовать мангальные зоны на свежем воздухе.\n\n"
+        "💡 <b>Совет:</b> мы рекомендуем приобретать продукты для приготовления еды заранее.\n\n"
+        "🛒 <b>Магазины:</b>\n"
+        "На территории Беловежской пущи продовольственных магазинов нет. Ближайший магазин с базовыми продуктами питания расположен на расстоянии 3–4 км от усадьбы.\n\n"
+        "🍽 <b>Рестораны:</b>\n"
+        "Ближайший ресторан находится на расстоянии 300–400 метров от нашей усадьбы (иногда закрыт на спец. обслуживание, поэтому продукты всё же лучше взять с собой).\n\n"
+        "Также кафе и рестораны есть возле главного входа в Беловежскую пущу и в резиденции Деда Мороза, где можно отведать блюда белорусской кухни."
     )
     await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
 
@@ -491,21 +522,21 @@ async def process_faq_nearby(callback: types.CallbackQuery):
         "📍 <b>Что находится рядом с нами</b>\n\n"
         "Наша усадьба расположена в уникальном историческом и природном месте. Совсем рядом с нами:\n\n"
         "🌲 Реликтовый первобытный лес\n"
-        "🦬 Зубры в естественной среде обитания\n"
+        "🦬 Зубры, олени, лоси, косули, кабаны и другие дикие животные в естественной среде обитания\n"
         "🎅 Поместье Деда Мороза\n"
         "🏛 Музей природы\n"
         "🦌 Экскурсионные вольеры с животными\n"
         "🏺 Археологический музей под открытым небом\n"
         "🛖 Музей народного быта и старинных технологий\n"
         "🚲 Велосипедные и пешеходные маршруты\n"
-        "👑 Царский тракт"
+        "👑 Царская поляна\n\n"
+        "<i>...и многое другое!</i>"
     )
     await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
 
 
 @dp.callback_query(F.data == "promo")
 async def process_promo(callback: types.CallbackQuery):
-    await callback.message.delete()
     text = (
         "🎁 <b>Специальные предложения усадьбы «Магия леса»</b>\n\n"
         "🎂 <b>СКИДКА 10% В ДЕНЬ РОЖДЕНИЯ</b>\n"
@@ -526,13 +557,13 @@ async def process_promo(callback: types.CallbackQuery):
     builder.row(InlineKeyboardButton(text="🎟 Забронировать по акции", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в главное меню", callback_data="back_main"))
 
+    await callback.message.delete()
     await callback.message.answer(text, reply_markup=builder.as_markup(), parse_mode="HTML")
     await callback.answer()
 
 
 @dp.callback_query(F.data == "location")
 async def process_location(callback: types.CallbackQuery):
-    await callback.message.delete()
     text = (
         "📍 <b>Как к нам добраться</b>\n\n"
         "Усадьба «Магия Леса» находится внутри заповедника, в 7 км от центрального входа в д. Каменюки.\n\n"
@@ -543,9 +574,10 @@ async def process_location(callback: types.CallbackQuery):
     )
     builder = InlineKeyboardBuilder()
     builder.row(InlineKeyboardButton(text="🗺 Маршрут в Яндекс.Навигатор", url="https://yandex.ru/maps/?rtext=~52.527526,23.860374~52.528997,23.879703"))
-    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Google Maps", url="https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.527526,23.860374&travelmode=driving"))
+    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Google Maps", url="https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.527526,23.860374"))
     builder.row(InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_main"))
 
+    await callback.message.delete()
     await callback.message.answer(text=text, reply_markup=builder.as_markup(), parse_mode="HTML")
     await callback.answer()
 
@@ -621,24 +653,12 @@ async def process_calendar(callback: types.CallbackQuery, callback_data: Calenda
         await callback.answer()
 
 
-# --- ЗАПУСК БОТА ЧЕРЕЗ СОБЫТИЕ СЕРВЕРА ---
-
-@app.on_event("startup")
-async def on_startup():
-    """Эта функция автоматически сработает при старте сервера на Render"""
+# --- ЗАПУСК БОТА ---
+async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await set_bot_commands(bot)
-    
-    # Запускаем поллинг бота в фоновом режиме, чтобы не блокировать веб-сервер
-    asyncio.create_task(dp.start_polling(bot))
-    logging.info("Бот успешно запущен в фоновом режиме!")
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    # Этот блок нужен только если вы запускаете бота локально с компьютера через python bot.py
-    async def local_main():
-        await bot.delete_webhook(drop_pending_updates=True)
-        await set_bot_commands(bot)
-        await dp.start_polling(bot)
-
-    asyncio.run(local_main())
+    asyncio.run(main())
