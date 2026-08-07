@@ -133,10 +133,11 @@ def get_main_menu():
     builder.row(InlineKeyboardButton(text="🌿 Дополнительные платные услуги и баня", callback_data="services"))
     builder.row(InlineKeyboardButton(text="🔥 Акции", callback_data="promo"))
     builder.row(InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"))
-    builder.row(InlineKeyboardButton(text="📍 Где мы находимся", callback_data="location"))
+    builder.row(InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location"))
+    builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
     builder.row(
         InlineKeyboardButton(text="🌐 Перейти на сайт ↗", url=BOOKING_WEBSITE_URL),
-        InlineKeyboardButton(text="📞 Связаться с менеджером ↗", url="https://t.me/+375297200003")
+        InlineKeyboardButton(text="📞 Связаться с управляющим ↗", url="https://t.me/+375297200003")
     )
     return builder.as_markup()
 
@@ -167,7 +168,9 @@ def get_services_menu():
     builder.row(InlineKeyboardButton(text="🧖‍♀️ Баня и Купели", callback_data="service_bath_pools"))
     builder.row(InlineKeyboardButton(text="🚲 Велосипеды и Активности", callback_data="service_bikes_active"))
     builder.row(InlineKeyboardButton(text="🥩 Беседки и Гриль", callback_data="service_grill"))
-    builder.row(InlineKeyboardButton(text="🎁 Сувенирная лавка", callback_data="service_souvenirs"))
+    builder.row(InlineKeyboardButton(text="🥃 Домашние эликсиры", callback_data="service_elixirs"))
+    builder.row(InlineKeyboardButton(text="💨 Кальян", callback_data="service_hookah"))
+    builder.row(InlineKeyboardButton(text="🍯 Мёд с пасеки", callback_data="service_honey"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="back_main"))
     return builder.as_markup()
 
@@ -505,18 +508,107 @@ async def process_service_grill(callback: types.CallbackQuery):
         pass
 
 
-@dp.callback_query(F.data == "service_souvenirs")
-async def process_service_souvenirs(callback: types.CallbackQuery):
-    text = (
-        "🎁 <b>Сувенирная Лавка «Магии леса»</b>\n\n"
-        "Заберите частичку пущи с собой или привезите подарок близким:\n\n"
-        "🥃 <b>Крафтовые настойки:</b> знаменитая Зубровка, медовуха и другие авторские напитки.\n"
-        "🍯 <b>Натуральный мёд:</b> собранный в экологически чистых районах.\n"
-        "🪵 <b>Изделия из дерева и керамики:</b> ручная работа местных мастеров.\n"
-        "☕️ <b>Брендированные кружки:</b> на долгую память об отдыхе.\n\n"
-        "Ассортимент представлен у администратора."
+@dp.callback_query(F.data.in_({"service_elixirs", "service_souvenirs"}))
+async def process_service_elixirs(callback: types.CallbackQuery):
+    await callback.answer()
+
+    photo_path = "media/eliksiry.jpg" if os.path.exists("media/eliksiry.jpg") else "eliksiry.jpg"
+    try:
+        photo = types.FSInputFile(photo_path) if os.path.exists(photo_path) else None
+    except Exception:
+        photo = None
+        logging.error("Файл с эликсирами не найден")
+
+    text_caption = (
+        "🥃 <b>Домашние эликсиры</b>\n\n"
+        "Наш фирменный крафтовый продукт, созданный по традиционным рецептам. Отличный вариант для душевного вечера на природе или в качестве сувенира!\n\n"
+        "🌿 <b>Вкусы в наличии:</b>\n"
+        "• Имбирь-мята\n"
+        "• Кедровый\n"
+        "• Зубровка\n"
+        "• Колган\n\n"
+        "💳 <b>Стоимость:</b> 30,00 BYN за 0,5 л\n\n"
+        "📞 <i>Для заказа и уточнения наличия свяжитесь с администратором.</i>"
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_services_button(), parse_mode="HTML")
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+    keyboard = builder.as_markup()
+
+    if photo:
+        await bot.send_photo(
+            chat_id=callback.message.chat.id,
+            photo=photo,
+            caption=text_caption,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    else:
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=text_caption,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+
+    try:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+    except Exception:
+        pass
+
+
+@dp.callback_query(F.data == "service_hookah")
+async def process_service_hookah(callback: types.CallbackQuery):
+    text = (
+        "💨 <b>Кальян</b>\n\n"
+        "Отличный способ расслабиться и насладиться вечером. Выберите вкус по своему предпочтению:\n\n"
+        "💪 <b>Крепкие смеси:</b>\n"
+        "• с охлаждающим эффектом\n"
+        "• лесные ягоды\n"
+        "• манго, маракуйя, личи и роза\n\n"
+        "🍃 <b>Лёгкие смеси:</b>\n"
+        "• малина ежевика\n"
+        "• чёрная смородина\n"
+        "• арбузная жвачка\n"
+        "• дыня с кокосом\n"
+        "• лимонные дольки\n"
+        "• лимонный йогурт\n\n"
+        "🚫 <b>Безтабачные:</b>\n"
+        "• киви лайм\n"
+        "• ежевика арбуз\n"
+        "• гавана лимон\n\n"
+        "💳 <b>Стоимость:</b> 50,00 BYN\n"
+        "👨‍💨 <b>Кальянный мастер:</b> Виктор\n"
+        "📞 <i>Для заказа свяжитесь с мастером напрямую.</i>"
+    )
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с кальян-мастером", url="https://t.me/+375298124837"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
+
+
+@dp.callback_query(F.data == "service_honey")
+async def process_service_honey(callback: types.CallbackQuery):
+    text = (
+        "🍯 <b>Натуральный мёд с нашей пасеки</b>\n\n"
+        "Вдали от дорог и городской суеты, в самом сердце лесной природы, наши трудолюбивые пчёлы собирают нектар с дикорастущих трав и цветов. Этот мёд — настоящее «жидкое золото», вобравшее в себя всю силу и пользу леса.\n\n"
+        "🌿 <b>В чём его уникальность?</b>\n"
+        "• <b>100% экологичность:</b> Собран в чистейшем районе, абсолютно натуральный продукт без добавок и сиропов.\n"
+        "• <b>Природная аптечка:</b> Мощный природный иммуномодулятор! Богат витаминами, антиоксидантами и ферментами. Отлично восстанавливает силы, успокаивает нервную систему и спасает от простуды.\n"
+        "• <b>Неповторимый вкус:</b> Густой, насыщенный аромат лесного разнотравья с долгим согревающим послевкусием.\n\n"
+        "<i>Идеально дополнит чаепитие после жаркой бани или станет прекрасным, а главное — полезным сувениром для ваших близких!</i>\n\n"
+        "💳 <b>Стоимость:</b> 25,00 BYN за 1 литр (1,4 кг)\n\n"
+        "📞 <i>Для заказа баночки здоровья свяжитесь с администратором.</i>"
+    )
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 
 # --- РАЗДЕЛ FAQ (ЧАСТЫЕ ВОПРОСЫ) ---
@@ -693,20 +785,25 @@ async def process_promo(callback: types.CallbackQuery):
 async def process_location(callback: types.CallbackQuery):
     text = (
         "📍 <b>Как к нам добраться</b>\n\n"
-        "Усадьба «Магия Леса» находится внутри заповедника, в 7 км от центрального входа в д. Каменюки.\n\n"
-        "🚗 <b>Ваш маршрут:</b>\n"
+        "Добраться можно самостоятельно на автомобиле.\n\n"
+        "🗺 <b>Ваш маршрут:</b>\n"
         "Каменец → Каменюки → Пашуки (КПП) → Гвоздь 1, д. 4\n\n"
-        "⚠️ <b>ВАЖНО: Въезд возможен ТОЛЬКО через КПП в д. Пашуки!</b> Через другие пропускные пункты вас не пропустят. От КПП до усадьбы останется проехать около 2 км.\n\n"
-        "Нажмите на кнопку ниже, чтобы построить готовый маршрут прямо до усадьбы (навигатор автоматически поведет вас через нужный пропускной пункт):"
+        "⚠️ <b>ВАЖНО:</b> Въезд возможен ТОЛЬКО через КПП в д. Пашуки! Через другие пропускные пункты вас не пропустят. От КПП до усадьбы останется проехать около 2 км.\n\n"
+        "🚕 <b>Услуги трансфера:</b>\n"
+        "• Трансфер до усадьбы из Бреста: 80 BYN\n"
+        "• Трансфер из усадьбы в Брест: 80 BYN\n\n"
+        "Для заказа трансфера свяжитесь с управляющим, нажав на кнопку ниже:"
     )
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Яндекс.Навигатор", url="https://yandex.ru/maps/?rtext=~52.527526,23.860374~52.528997,23.879703"))
-    builder.row(InlineKeyboardButton(text="🗺 Маршрут в Google Maps", url="https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.527526,23.860374"))
-    builder.row(InlineKeyboardButton(text="⬅️ В главное меню", callback_data="back_main"))
 
-    await callback.message.delete()
-    await callback.message.answer(text=text, reply_markup=builder.as_markup(), parse_mode="HTML")
-    await callback.answer()
+    google_url = "https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.561228,23.798991|52.527526,23.860374"
+    yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
+    builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 
 # --- ОБРАБОТКА ПОИСКА И КАЛЕНДАРЯ ---
