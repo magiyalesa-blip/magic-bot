@@ -128,17 +128,30 @@ def generate_calendar(year: int, month: int):
 def get_main_menu():
     """Главное меню бота"""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu"))
+
+    # Короткие кнопки ставим по две в ряд
+    builder.row(
+        InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu"),
+        InlineKeyboardButton(text="🔥 Акции", callback_data="promo")
+    )
+
+    # Длинные кнопки по одной на всю ширину
     builder.row(InlineKeyboardButton(text="🏡 Свободные дома, цены, бронирование", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
     builder.row(InlineKeyboardButton(text="🌿 Дополнительные платные услуги и баня", callback_data="services"))
-    builder.row(InlineKeyboardButton(text="🔥 Акции", callback_data="promo"))
-    builder.row(InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"))
-    builder.row(InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location"))
-    builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
+
+    # Снова две относительно короткие кнопки вместе
     builder.row(
-        InlineKeyboardButton(text="🌐 Перейти на сайт ↗", url=BOOKING_WEBSITE_URL),
-        InlineKeyboardButton(text="📞 Связаться с управляющим ↗", url="https://t.me/+375297200003")
+        InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"),
+        InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location")
     )
+
+    # Сайт отдельной широкой кнопкой
+    builder.row(InlineKeyboardButton(text="🌐 Перейти на сайт ↗", url=BOOKING_WEBSITE_URL))
+
+    # Контакты выносим по одной в ряд, чтобы текст не обрезался
+    builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим ↗", url="https://t.me/+375297200003"))
+
     return builder.as_markup()
 
 
@@ -400,23 +413,41 @@ async def process_price_souvenirs(callback: types.CallbackQuery):
 
 @dp.callback_query(F.data.in_({"service_bath", "service_bath_pools"}))
 async def process_service_bath_pools(callback: types.CallbackQuery):
-    await callback.answer("Загружаем прайс...")
+    await callback.answer()
 
-    photo_path = "media/banya_price_list.jpg" if os.path.exists("media/banya_price_list.jpg") else "banya_price_list.jpg"
-    photo = types.FSInputFile(photo_path)
-
-    await bot.send_photo(
-        chat_id=callback.message.chat.id,
-        photo=photo,
-        caption="🧖‍♀️ Актуальный прайс-лист на банные услуги.\n"
-                "Для заказа свяжитесь с управляющим.",
-        reply_markup=get_back_to_services_button()
+    text_caption = (
+        "🧖‍♀️ <b>Баня и купели</b>\n\n"
+        "На территории усадьбы находятся две бани:\n"
+        "1. <b>Баня с горячей купелью</b> (до 6 человек).\n"
+        "2. <b>Банный СПА-комплекс Люкс</b> (до 10 человек) — идеально для большой компании.\n\n"
+        "🍃 <b>Ваш перезагруз в «Магии леса»</b>\n"
+        "Почувствуйте, как горячий пар снимает городскую усталость, а контрастная купель дарит невероятный заряд бодрости. Это идеальное место, чтобы восстановить силы после прогулок по Беловежской пуще, согреться в прохладный вечер или устроить душевный праздник в кругу друзей.\n\n"
+        "Аромат натурального дерева, жар парной и чистейший лесной воздух — это отдых, который останется в памяти надолго.\n\n"
+        "💳 <i>Актуальные цены на услуги представлены на фото.</i>"
     )
 
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="✅ Забронировать баню", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+    keyboard = builder.as_markup()
+
+    photo_path = "media/banya_price_list.jpg" if os.path.exists("media/banya_price_list.jpg") else "banya_price_list.jpg"
     try:
-        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
-    except Exception:
-        pass
+        photo = types.FSInputFile(photo_path) if os.path.exists(photo_path) else None
+        if photo:
+            await bot.send_photo(
+                chat_id=callback.message.chat.id,
+                photo=photo,
+                caption=text_caption,
+                reply_markup=keyboard,
+                parse_mode="HTML"
+            )
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+        else:
+            await callback.message.edit_text(text_caption, reply_markup=keyboard, parse_mode="HTML")
+    except Exception as e:
+        logging.error(f"Ошибка при отправке фото бани: {e}")
+        await callback.message.edit_text(text_caption, reply_markup=keyboard, parse_mode="HTML")
 
 
 @dp.callback_query(F.data.in_({"service_rent", "service_bikes_active"}))
@@ -627,10 +658,15 @@ async def process_faq_time(callback: types.CallbackQuery):
         "🕒 <b>Время заезда и выезда</b>\n\n"
         "• <b>Заселение:</b> с 14:00 до 21:00\n"
         "• <b>Выезд:</b> до 12:00\n\n"
-        "⚠️ В день приезда обязательно свяжитесь с управляющей Тамарой по телефону <b><a href='tel:+375293139702'>+375 29 313-97-02</a></b> (Viber / Telegram / WhatsApp) для согласования времени заселения.\n\n"
+        "⚠️ В день приезда обязательно свяжитесь с управляющей Тамарой по телефону +375 29 313-97-02 (Viber / Telegram / WhatsApp) для согласования времени заселения.\n\n"
         "❗️ Если вы задерживаетесь в пути, пожалуйста, предупредите нас. Заселение после 21:00 возможно по предварительному согласованию."
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с Тамарой", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к вопросам", callback_data="faq_menu"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 
 @dp.callback_query(F.data == "faq_payment")
