@@ -126,33 +126,18 @@ def generate_calendar(year: int, month: int):
 
 # --- ФУНКЦИИ КЛАВИАТУР ---
 def get_main_menu():
-    """Главное меню бота (логичное и адаптированное под мобайл)"""
+    """Главное меню бота"""
     builder = InlineKeyboardBuilder()
-
-    # 1 ряд (Частые вопросы - на первое место)
     builder.row(InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu"))
-
-    # 2 ряд (Прямой переход к бронированию и свободным домам через WebApp)
     builder.row(InlineKeyboardButton(text="🏡 Свободные дома, цены, бронирование", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
-
-    # 3 ряд (Услуги - что мы предлагаем)
-    builder.row(InlineKeyboardButton(text="🌿 Услуги и Баня", callback_data="services"))
-
-    # 4 ряд (Акции - продвижение)
+    builder.row(InlineKeyboardButton(text="🌿 Дополнительные платные услуги и баня", callback_data="services"))
     builder.row(InlineKeyboardButton(text="🔥 Акции", callback_data="promo"))
-
-    # 5 ряд (Условия бронирования)
     builder.row(InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"))
-
-    # 6 ряд (Навигация)
     builder.row(InlineKeyboardButton(text="📍 Где мы находимся", callback_data="location"))
-
-    # 7 ряд (Сайт и связь с администратором)
     builder.row(
-        InlineKeyboardButton(text="🌐 Перейти на сайт", url="https://magiyalesa.com/"),
-        InlineKeyboardButton(text="📞 Связаться с менеджером", url="https://t.me/+375297200003")
+        InlineKeyboardButton(text="🌐 Перейти на сайт ↗", url=BOOKING_WEBSITE_URL),
+        InlineKeyboardButton(text="📞 Связаться с менеджером ↗", url="https://t.me/+375297200003")
     )
-
     return builder.as_markup()
 
 
@@ -177,18 +162,12 @@ def get_back_to_rules_button():
 
 
 def get_services_menu():
-    """Подменю раздела Дополнительных услуг"""
+    """Подменю раздела дополнительных услуг и бани"""
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🧖‍♀️ Баня и Купели", callback_data="service_bath"))
-    builder.row(InlineKeyboardButton(text="🚲 Велосипеды и Активности", callback_data="service_rent"))
+    builder.row(InlineKeyboardButton(text="🧖‍♀️ Баня и Купели", callback_data="service_bath_pools"))
+    builder.row(InlineKeyboardButton(text="🚲 Велосипеды и Активности", callback_data="service_bikes_active"))
     builder.row(InlineKeyboardButton(text="🥩 Беседки и Гриль", callback_data="service_grill"))
     builder.row(InlineKeyboardButton(text="🎁 Сувенирная лавка", callback_data="service_souvenirs"))
-
-    # Прайс-листы перенесены вниз
-    builder.row(InlineKeyboardButton(text="📜 Прайс: Баня и прокат", callback_data="price_main"))
-    builder.row(InlineKeyboardButton(text="📜 Прайс: Эликсиры и кальян", callback_data="price_souvenirs"))
-
-    # Кнопка Назад
     builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="back_main"))
     return builder.as_markup()
 
@@ -209,6 +188,7 @@ def get_faq_menu():
     builder.row(InlineKeyboardButton(text="💳 Условия оплаты", callback_data="faq_payment"))
     builder.row(InlineKeyboardButton(text="💵 Окончательный расчёт", callback_data="faq_final_payment"))
     builder.row(InlineKeyboardButton(text="🍽 Питание, магазины, рестораны", callback_data="faq_food"))
+    builder.row(InlineKeyboardButton(text="🚗 Трансфер и маршрут", callback_data="faq_transfer"))
     builder.row(InlineKeyboardButton(text="📍 Что рядом", callback_data="faq_nearby"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад", callback_data="back_main"))
     return builder.as_markup()
@@ -266,7 +246,7 @@ async def process_back_main(callback: types.CallbackQuery):
 
 # --- МЕНЮ ПРАВИЛ ---
 
-@dp.callback_query(F.data == "rules_menu")
+@dp.callback_query(F.data.in_({"rules_menu", "rules"}))
 async def process_rules_menu(callback: types.CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(
@@ -415,40 +395,114 @@ async def process_price_souvenirs(callback: types.CallbackQuery):
     await callback.answer()
 
 
-@dp.callback_query(F.data == "service_bath")
-async def process_service_bath(callback: types.CallbackQuery):
-    text = (
-        "🧖‍♀️ <b>Наши Банные Комплексы</b>\n\n"
-        "Мы предлагаем два формата для идеального расслабления:\n\n"
-        "🌿 <b>Обычная баня с купелью:</b> классический пар и освежающая купель для полного релакса.\n"
-        "👑 <b>Баня Люкс (до 8-10 человек):</b> просторная зона отдыха, идеальна для большой компании.\n\n"
-        "Для бронирования времени, пожалуйста, свяжитесь с нашим менеджером."
+@dp.callback_query(F.data.in_({"service_bath", "service_bath_pools"}))
+async def process_service_bath_pools(callback: types.CallbackQuery):
+    await callback.answer("Загружаем прайс...")
+
+    photo_path = "media/banya_price_list.jpg" if os.path.exists("media/banya_price_list.jpg") else "banya_price_list.jpg"
+    photo = types.FSInputFile(photo_path)
+
+    await bot.send_photo(
+        chat_id=callback.message.chat.id,
+        photo=photo,
+        caption="🧖‍♀️ Актуальный прайс-лист на банные услуги.\n"
+                "Для заказа свяжитесь с управляющим.",
+        reply_markup=get_back_to_services_button()
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_services_button(), parse_mode="HTML")
+
+    try:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+    except Exception:
+        pass
 
 
-@dp.callback_query(F.data == "service_rent")
-async def process_service_rent(callback: types.CallbackQuery):
+@dp.callback_query(F.data.in_({"service_rent", "service_bikes_active"}))
+async def process_service_bikes(callback: types.CallbackQuery):
     text = (
-        "🚲 <b>Активный отдых и Экскурсии</b>\n\n"
-        "Исследуйте заповедную природу Беловежской пущи!\n\n"
-        "• <b>Прокат велосипедов:</b> отличный способ прокатиться по лесным тропам.\n"
-        "• <b>Экскурсии и аренда:</b> поможем организовать ваш досуг на воде и суше.\n\n"
-        "Узнать о наличии инвентаря можно у администрации."
+        "🚲 <b>Прокат велосипедов — свобода, природа и адреналин!</b>\n\n"
+        "Хотите почувствовать дыхание древнего леса, промчаться по тропам, где когда-то ходили зубры, и увидеть нетронутую красоту Беловежской пущи? Наши велосипеды — ваш лучший проводник!\n\n"
+        "🌳 <b>Лучшие веломаршруты по заповеднику:</b>\n"
+        "• <b>«Царская тропа»</b> — живописный путь через дубравы и сосновые боры.\n"
+        "• <b>«Зубриный след»</b> — шанс встретить величественных обитателей пущи.\n"
+        "• <b>Маршруты на любой вкус</b> — от лёгких прогулочных до экстремальных треков.\n\n"
+        "<i>Крутите педали, вдыхайте аромат хвои и открывайте Беловежскую пущу по-новому!</i>\n\n"
+        "💳 <b>Аренда велосипеда:</b> 20 BYN / 3 часа\n\n"
+        "〰️〰️〰️〰️〰️\n\n"
+        "🛴 <b>Прокат самокатов — спокойствие и комфорт</b>\n\n"
+        "Приглашаем вас открыть Беловежскую пущу по-новому — на удобных и легких в управлении самокатах. Это отличный способ неспешно насладиться природой и свежим воздухом, не уставая от долгих пеших прогулок.\n\n"
+        "✨ <b>Наши самокаты:</b>\n"
+        "• Находятся прямо рядом с основными туристическими маршрутами.\n"
+        "• Современные, удобные и безопасные.\n"
+        "• Подходят взрослым и подросткам (идеально для семейных, романтических поездок и небольших компаний).\n\n"
+        "💳 <b>Аренда самоката:</b> 20 BYN / 2 часа\n\n"
+        "📞 <i>Узнать о наличии инвентаря можно у администрации.</i>"
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_services_button(), parse_mode="HTML")
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 
 @dp.callback_query(F.data == "service_grill")
 async def process_service_grill(callback: types.CallbackQuery):
-    text = (
-        "🥩 <b>Беседки и Гриль-зоны</b>\n\n"
+    await callback.answer()
+
+    photo_path = "media/besedka_gril.jpg" if os.path.exists("media/besedka_gril.jpg") else "besedka_gril.jpg"
+    try:
+        photo = types.FSInputFile(photo_path) if os.path.exists(photo_path) else None
+    except Exception:
+        photo = None
+        logging.error("Файл besedka_gril.jpg не найден")
+
+    text_intro = (
+        "🔥 <b>Беседки и Гриль</b>\n\n"
         "Для любителей готовить на открытом огне у нас предусмотрены:\n\n"
         "• Уютные открытые беседки\n"
-        "• Специализированные беседки-гриль для любой погоды\n\n"
-        "Все зоны оборудованы мангалами. Уголь и розжиг можно приобрести на месте."
+        "• Специализированные беседки-гриль для любой погоды.\n\n"
+        "🏠 <b>Скандинавская беседка</b>"
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_services_button(), parse_mode="HTML")
+
+    text_caption = (
+        "🔥 <b>Сердце беседки – настоящий очаг!</b>\n"
+        "— Массивная чугунная чаша в центре – греет, создаёт атмосферу и идеально подходит для гриля, казана или котелка.\n"
+        "— Можно приготовить шашлык, шурпу, стейки или даже испечь картошку в углях – как душа пожелает!\n\n"
+        "🍖 <b>Всё для идеального застолья:</b>\n"
+        "— Мангал, решётки, шампуры и казаны – берите продукты, остальное предоставим мы.\n"
+        "— Дрова и розжиг – чтобы вы сразу погрузились в процесс.\n\n"
+        "🌲 <b>Уютный северный стиль:</b>\n"
+        "— Натуральное дерево, тёплый свет фонарей и панорамные окна – внутри тепло даже в прохладный вечер.\n"
+        "— Мягкие пледы и меховые накидки – если захочется укутаться в прохладу.\n\n"
+        "💳 <b>Аренда:</b> 25 BYN за услугу.\n"
+        "📞 <i>Забронировать можно у администратора.</i>"
+    )
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к услугам", callback_data="services"))
+    keyboard = builder.as_markup()
+
+    if photo:
+        await bot.send_photo(
+            chat_id=callback.message.chat.id,
+            photo=photo,
+            caption=text_intro + "\n\n" + text_caption,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+    else:
+        await bot.send_message(
+            chat_id=callback.message.chat.id,
+            text=text_intro + "\n\n" + text_caption,
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
+
+    try:
+        await bot.delete_message(chat_id=callback.message.chat.id, message_id=callback.message.message_id)
+    except Exception:
+        pass
 
 
 @dp.callback_query(F.data == "service_souvenirs")
@@ -482,7 +536,7 @@ async def process_faq_time(callback: types.CallbackQuery):
         "• <b>Заселение:</b> с 14:00 до 21:00\n"
         "• <b>Выезд:</b> до 12:00\n\n"
         "⚠️ В день приезда обязательно свяжитесь с управляющей Тамарой по телефону <b><a href='tel:+375293139702'>+375 29 313-97-02</a></b> (Viber / Telegram / WhatsApp) для согласования времени заселения.\n\n"
-        "❗️ Если вы задерживаетесь в пути, пожалуйста, предупредите нас. Заселение после 21:00 возможно только по предварительному согласованию."
+        "❗️ Если вы задерживаетесь в пути, пожалуйста, предупредите нас. Заселение после 21:00 возможно по предварительному согласованию."
     )
     await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
 
@@ -491,9 +545,9 @@ async def process_faq_time(callback: types.CallbackQuery):
 async def process_faq_payment(callback: types.CallbackQuery):
     text = (
         "💳 <b>Условия оплаты и предоплаты</b>\n\n"
-        "• При бронировании взимается ОБЯЗАТЕЛЬНАЯ предоплата до 30%. В праздничные дни — до 70%.\n"
-        "🔄 При отмене или переносе брони предоплата не возвращается, но сохраняется за вами для переноса даты.\n"
-        "📅 Перенести бронь на другую дату можно 1 (один) раз на срок не более 3 месяцев (при наличии свободных мест).\n"
+        "• При бронировании взимается ОБЯЗАТЕЛЬНАЯ предоплата до <b>30%</b>. В праздничные дни — до <b>70%</b>.\n"
+        "🔄 При отмене или переносе брони предоплата не возвращается, но сохраняется за вами право для переноса даты.\n"
+        "📅 Перенести бронь на другую дату можно <b>1 (один) раз</b> на срок не более 3 месяцев (при наличии свободных мест).\n"
         "🚫 Перенос менее чем за 7 дней до заезда невозможен.\n\n"
         "💵 <b>Обратите внимание:</b> окончательный расчет за проживание осуществляется непосредственно при заселении, <b>наличными в белорусских рублях (BYN)</b>. Поэтому гостям из РФ убедительная просьба обменять деньги в обменных пунктах на наличные белорусские рубли заранее в полном объёме."
     )
@@ -582,7 +636,33 @@ async def process_faq_nearby(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=get_back_to_faq_button(), parse_mode="HTML")
 
 
-@dp.callback_query(F.data == "promo")
+@dp.callback_query(F.data == "faq_transfer")
+async def process_faq_transfer(callback: types.CallbackQuery):
+    text = (
+        "🚗 <b>Трансфер и маршрут</b>\n\n"
+        "Добраться можно самостоятельно на автомобиле.\n\n"
+        "🗺 <b>Ваш маршрут:</b>\n"
+        "Каменец → Каменюки → Пашуки (КПП) → Гвоздь 1, д. 4\n\n"
+        "⚠️ <b>ВАЖНО:</b> Въезд возможен ТОЛЬКО через КПП в д. Пашуки! Через другие пропускные пункты вас не пропустят. От КПП до усадьбы останется проехать около 2 км.\n\n"
+        "🚕 <b>Услуги трансфера:</b>\n"
+        "• Трансфер до усадьбы из Бреста: 80 BYN\n"
+        "• Трансфер из усадьбы в Брест: 80 BYN\n\n"
+        "Для заказа трансфера свяжитесь с управляющим, нажав на кнопку ниже:"
+    )
+
+    # Ссылки
+    google_url = "https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.561228,23.798991|52.527526,23.860374"
+    yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
+    manager_url = "https://t.me/+375297200003"
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url=manager_url))
+    builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к вопросам", callback_data="faq_menu"))
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
+
+
+@dp.callback_query(F.data.in_({"promo", "promos"}))
 async def process_promo(callback: types.CallbackQuery):
     text = (
         "🎁 <b>Специальные предложения усадьбы «Магия леса»</b>\n\n"
@@ -698,6 +778,16 @@ async def process_calendar(callback: types.CallbackQuery, callback_data: Calenda
 
         await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
         await callback.answer()
+
+
+# --- ОБРАБОТЧИК ЛЮБОГО ТЕКСТА ---
+@dp.message(F.text)
+async def handle_any_text(message: types.Message):
+    await message.answer(
+        "Я работаю с помощью кнопок меню! 🏡\n"
+        "Пожалуйста, выберите нужный раздел с помощью кнопок выше или нажмите /start для возврата в главное меню.",
+        reply_markup=get_main_menu()
+    )
 
 
 # --- ЗАПУСК БОТА ---
