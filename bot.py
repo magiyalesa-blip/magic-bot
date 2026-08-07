@@ -839,7 +839,12 @@ async def process_location(callback: types.CallbackQuery):
     builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
 
-    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+    await callback.message.answer(text=text, reply_markup=builder.as_markup(), parse_mode="HTML")
+    await callback.answer()
 
 
 # --- ОБРАБОТКА ПОИСКА И КАЛЕНДАРЯ ---
