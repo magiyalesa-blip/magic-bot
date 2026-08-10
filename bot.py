@@ -1,10 +1,3 @@
-Viewed bot.py:1-800
-Viewed bot.py:718-959
-Viewed bot.py:718-959
-
-Вот полный монолитный код вашего бота ([`bot.py`](file:///c:/Users/Admin/bot/bot.py)):
-
-```python
 import asyncio
 import calendar
 import logging
@@ -964,4 +957,3 @@ async def main():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("bot:app", host="0.0.0.0", port=port)
-```
