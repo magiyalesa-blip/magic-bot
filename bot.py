@@ -156,13 +156,14 @@ def get_main_menu():
 
 
 def get_rules_menu():
-    """Подменю раздела Правил"""
+    """Меню правил усадьбы"""
     builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="⚠️ Главное правило", callback_data="rule_main"))
     builder.row(InlineKeyboardButton(text="💳 Правила бронирования и предоплата", callback_data="rule_booking"))
     builder.row(InlineKeyboardButton(text="🏡 Правила проживания", callback_data="rule_living"))
-    builder.row(InlineKeyboardButton(text="👥 Отдых большой компанией", callback_data="rule_big_company"))
-    builder.row(InlineKeyboardButton(text="🐾 Проживание с животными", callback_data="rule_animals"))
-    builder.row(InlineKeyboardButton(text="📸 Проведение фотосессий", callback_data="rule_photo"))
+    builder.row(InlineKeyboardButton(text="👥 Отдых большой компанией", callback_data="rule_company"))
+    builder.row(InlineKeyboardButton(text="🐾 Проживание с животными", callback_data="rule_pets"))
+    builder.row(InlineKeyboardButton(text="📸 Проведение фотосессий", callback_data="rule_photos"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
     return builder.as_markup()
 
@@ -274,6 +275,18 @@ async def process_rules_menu(callback: types.CallbackQuery):
     await callback.answer()
 
 
+@dp.callback_query(F.data == "rule_main")
+async def process_rule_main(callback: types.CallbackQuery):
+    text = (
+        "⚠️ <b>Главное правило</b>\n\n"
+        "Осуществляя бронирование, вы автоматически соглашаетесь с данными правилами."
+    )
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к правилам", callback_data="rules_menu"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
+
+
 @dp.callback_query(F.data == "rule_booking")
 async def process_rule_booking(callback: types.CallbackQuery):
     text = (
@@ -282,7 +295,6 @@ async def process_rule_booking(callback: types.CallbackQuery):
         "🔄 При отмене или переносе брони предоплата не возвращается, но сохраняется за вами для переноса даты.\n\n"
         "📅 Перенести бронь на другую дату можно <b>1 (один) раз</b> на срок не более 3 месяцев (при наличии свободных мест).\n\n"
         "🚫 Перенос менее чем за 7 дней до заезда невозможен.\n\n"
-        "⚠️ <b>Осуществляя бронирование, вы автоматически соглашаетесь с данными правилами.</b>\n\n"
         "❓ <i>Для чего нужна предоплата?</i>\n"
         "💬 <i>Предоплата гарантирует, что вас будут ждать чистые и подготовленные апартаменты.</i>"
     )
@@ -325,10 +337,16 @@ async def process_rule_living(callback: types.CallbackQuery):
         "• Бережно относитесь к имуществу. Обо всех поломках сообщайте администрации.\n\n"
         "📞 <i>По всем возникающим вопросам обращайтесь к администрации. Благодарим за понимание и бережное отношение к заповеднику!</i>"
     )
-    await callback.message.edit_text(text, reply_markup=get_back_to_rules_button(), parse_mode="HTML")
+
+    builder = InlineKeyboardBuilder()
+    builder.row(InlineKeyboardButton(text="📞 Связаться с администратором", url="https://t.me/+375293139702"))
+    builder.row(InlineKeyboardButton(text="⬅️ Назад к правилам", callback_data="rules_menu"))
+    builder.row(InlineKeyboardButton(text="🏠 В главное меню", callback_data="back_main"))
+
+    await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
 
-@dp.callback_query(F.data == "rule_big_company")
+@dp.callback_query(F.data.in_({"rule_company", "rule_big_company"}))
 async def process_rule_big_company(callback: types.CallbackQuery):
     text = (
         "👥 <b>Отдых большой компанией:</b>\n\n"
@@ -340,7 +358,7 @@ async def process_rule_big_company(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=get_back_to_rules_button(), parse_mode="HTML")
 
 
-@dp.callback_query(F.data == "rule_animals")
+@dp.callback_query(F.data.in_({"rule_pets", "rule_animals"}))
 async def process_rule_animals(callback: types.CallbackQuery):
     text = (
         "🐾 <b>Проживание с животными</b>\n\n"
@@ -353,7 +371,7 @@ async def process_rule_animals(callback: types.CallbackQuery):
     await callback.message.edit_text(text, reply_markup=get_back_to_rules_button(), parse_mode="HTML")
 
 
-@dp.callback_query(F.data == "rule_photo")
+@dp.callback_query(F.data.in_({"rule_photos", "rule_photo"}))
 async def process_rule_photo(callback: types.CallbackQuery):
     text = (
         "📸 <b>Проведение фотосессий</b>\n\n"
@@ -778,14 +796,12 @@ async def process_faq_transfer(callback: types.CallbackQuery):
         "Для заказа трансфера свяжитесь с управляющим, нажав на кнопку ниже:"
     )
 
-    # Ссылки
     google_url = "https://www.google.com/maps/dir/?api=1&destination=52.528997,23.879703&waypoints=52.561228,23.798991|52.527526,23.860374"
     yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
-    manager_url = "https://t.me/+375297200003"
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url=manager_url))
     builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад к вопросам", callback_data="faq_menu"))
     await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
 
@@ -835,8 +851,8 @@ async def process_location(callback: types.CallbackQuery):
     yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
     builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
 
     try:
