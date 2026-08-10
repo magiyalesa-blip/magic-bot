@@ -1,3 +1,10 @@
+Viewed bot.py:1-800
+Viewed bot.py:718-959
+Viewed bot.py:718-959
+
+Вот полный монолитный код вашего бота ([`bot.py`](file:///c:/Users/Admin/bot/bot.py)):
+
+```python
 import asyncio
 import calendar
 import logging
@@ -145,15 +152,15 @@ def get_main_menu():
         InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location")
     )
 
-    # Ссылки на сайт и Instagram в одном ряду
+    # Ссылки на сайт и Instagram в одном ряду (без лишних стрелочек в тексте)
     builder.row(
-        InlineKeyboardButton(text="🌐 Сайт ↗", url=BOOKING_WEBSITE_URL),
-        InlineKeyboardButton(text="📸 Instagram ↗", url="https://www.instagram.com/magya_lesa/")
+        InlineKeyboardButton(text="🌐 Сайт", url=BOOKING_WEBSITE_URL),
+        InlineKeyboardButton(text="📸 Instagram", url="https://www.instagram.com/magya_lesa/")
     )
 
     # Контакты выносим по одной в ряд
     builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
-    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим ↗", url="https://t.me/+375297200003"))
+    builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
 
     return builder.as_markup()
 
@@ -957,3 +964,4 @@ async def main():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("bot:app", host="0.0.0.0", port=port)
+```
