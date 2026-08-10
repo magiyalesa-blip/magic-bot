@@ -139,16 +139,19 @@ def get_main_menu():
     builder.row(InlineKeyboardButton(text="🏡 Свободные дома, цены, бронирование", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
     builder.row(InlineKeyboardButton(text="🌿 Дополнительные платные услуги и баня", callback_data="services"))
 
-    # Снова две относительно короткие кнопки вместе
+    # Две относительно короткие кнопки вместе
     builder.row(
         InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"),
         InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location")
     )
 
-    # Сайт отдельной широкой кнопкой
-    builder.row(InlineKeyboardButton(text="🌐 Перейти на сайт ↗", url=BOOKING_WEBSITE_URL))
+    # Ссылки на сайт и Instagram в одном ряду
+    builder.row(
+        InlineKeyboardButton(text="🌐 Сайт ↗", url=BOOKING_WEBSITE_URL),
+        InlineKeyboardButton(text="📸 Instagram ↗", url="https://www.instagram.com/magya_lesa/")
+    )
 
-    # Контакты выносим по одной в ряд, чтобы текст не обрезался
+    # Контакты выносим по одной в ряд
     builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
     builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим ↗", url="https://t.me/+375297200003"))
 
