@@ -789,11 +789,14 @@ async def process_faq_nearby(callback: types.CallbackQuery):
 async def process_faq_transfer(callback: types.CallbackQuery):
     text = (
         "🚗 <b>Трансфер и маршрут</b>\n\n"
-        "Добраться можно самостоятельно на автомобиле.\n\n"
+        "<b>Первый вариант:</b> Добраться можно самостоятельно на автомобиле.\n\n"
         "🗺 <b>Ваш маршрут:</b>\n"
         "Каменец → Каменюки → Пашуки (КПП) → Гвоздь 1, д. 4\n\n"
         "⚠️ <b>ВАЖНО:</b> Въезд возможен ТОЛЬКО через КПП в д. Пашуки! Через другие пропускные пункты вас не пропустят. От КПП до усадьбы останется проехать около 2 км.\n\n"
-        "🚕 <b>Услуги трансфера:</b>\n"
+        "🚌 <b>Второй вариант:</b> Общественный транспорт.\n"
+        "• До агродеревни Каменюки на автобусе/маршрутке (Брест — Каменюки), далее до усадьбы «Магия Леса» расстояние 6 км, которое возможно преодолеть пешком.\n"
+        "• До Каменца на автобусе/маршрутке (Брест — Каменец), затем воспользоваться службой ТАКСИ (2277, как вариант — тел.: +375 (29) 8925451; +375 (29) 2286025).\n\n"
+        "🚕 <b>Третий вариант: Услуги трансфера</b>\n"
         "• Трансфер до усадьбы из Бреста: 80 BYN\n"
         "• Трансфер из усадьбы в Брест: 80 BYN\n\n"
         "Для заказа трансфера свяжитесь с управляющим, нажав на кнопку ниже:"
@@ -803,7 +806,10 @@ async def process_faq_transfer(callback: types.CallbackQuery):
     yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(
+        InlineKeyboardButton(text="🚗 Google Maps ↗️", url=google_url),
+        InlineKeyboardButton(text="🚗 Yandex Maps ↗️", url=yandex_url)
+    )
     builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад к вопросам", callback_data="faq_menu"))
     await callback.message.edit_text(text, reply_markup=builder.as_markup(), parse_mode="HTML")
@@ -840,11 +846,14 @@ async def process_promo(callback: types.CallbackQuery):
 async def process_location(callback: types.CallbackQuery):
     text = (
         "📍 <b>Как к нам добраться</b>\n\n"
-        "Добраться можно самостоятельно на автомобиле.\n\n"
+        "<b>Первый вариант:</b> Добраться можно самостоятельно на автомобиле.\n\n"
         "🗺 <b>Ваш маршрут:</b>\n"
         "Каменец → Каменюки → Пашуки (КПП) → Гвоздь 1, д. 4\n\n"
         "⚠️ <b>ВАЖНО:</b> Въезд возможен ТОЛЬКО через КПП в д. Пашуки! Через другие пропускные пункты вас не пропустят. От КПП до усадьбы останется проехать около 2 км.\n\n"
-        "🚕 <b>Услуги трансфера:</b>\n"
+        "🚌 <b>Второй вариант:</b> Общественный транспорт.\n"
+        "• До агродеревни Каменюки на автобусе/маршрутке (Брест — Каменюки), далее до усадьбы «Магия Леса» расстояние 6 км, которое возможно преодолеть пешком.\n"
+        "• До Каменца на автобусе/маршрутке (Брест — Каменец), затем воспользоваться службой ТАКСИ (2277, как вариант — тел.: +375 (29) 8925451; +375 (29) 2286025).\n\n"
+        "🚕 <b>Третий вариант: Услуги трансфера</b>\n"
         "• Трансфер до усадьбы из Бреста: 80 BYN\n"
         "• Трансфер из усадьбы в Брест: 80 BYN\n\n"
         "Для заказа трансфера свяжитесь с управляющим, нажав на кнопку ниже:"
@@ -854,7 +863,10 @@ async def process_location(callback: types.CallbackQuery):
     yandex_url = "https://yandex.ru/maps/?rtext=~52.561228,23.798991~52.527526,23.860374~52.528997,23.879703"
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🗺 Google Maps", url=google_url), InlineKeyboardButton(text="🗺 Yandex Maps", url=yandex_url))
+    builder.row(
+        InlineKeyboardButton(text="🚗 Google Maps ↗️", url=google_url),
+        InlineKeyboardButton(text="🚗 Yandex Maps ↗️", url=yandex_url)
+    )
     builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
     builder.row(InlineKeyboardButton(text="⬅️ Назад в меню", callback_data="back_main"))
 
