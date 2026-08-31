@@ -16,7 +16,7 @@ import uvicorn
 # ==========================================
 API_TOKEN = '6254732449:AAFvbHPTLLn4NX2U4Grr-f9_uCabdUTcgsA'
 BOOKING_WEBSITE_URL = 'https://bronirovanie.magiyalesa.com/'
-REVIEWS_WEBSITE_URL = 'https://magiyalesa.com/reviews.html'
+REVIEWS_WEBSITE_URL = 'https://kovkabrest.by/reviews.html'
 # ==========================================
 
 logging.basicConfig(
