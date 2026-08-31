@@ -139,37 +139,30 @@ def get_main_menu():
     """Главное меню бота"""
     builder = InlineKeyboardBuilder()
 
-    # 1 ряд: Дома и глэмпинги + FAQ
-    builder.row(
-        InlineKeyboardButton(text="🏡 Гостевые дома и глэмпинги", callback_data="houses_menu"),
-        InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu")
-    )
-
-    # 2 ряд: Бронирование (Web App)
+    # Длинные названия размещаем на отдельных строках во избежание обрезки
+    builder.row(InlineKeyboardButton(text="🏡 Гостевые дома и глэмпинги", callback_data="houses_menu"))
     builder.row(InlineKeyboardButton(text="🏡 Свободные дома, цены, бронирование", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
 
-    # 3 ряд: Отзывы и Акции
+    # Средние кнопки объединяем в пары
     builder.row(
         InlineKeyboardButton(text="⭐ Отзывы гостей", web_app=WebAppInfo(url=REVIEWS_WEBSITE_URL)),
         InlineKeyboardButton(text="🔥 Акции", callback_data="promo")
     )
 
-    # 4 ряд: Дополнительные услуги и баня
     builder.row(InlineKeyboardButton(text="🌿 Дополнительные платные услуги и баня", callback_data="services"))
 
-    # 5 ряд: Правила бронирования + Как к нам добраться
     builder.row(
         InlineKeyboardButton(text="📜 Правила бронирования", callback_data="rules_menu"),
         InlineKeyboardButton(text="📍 Как к нам добраться", callback_data="location")
     )
 
-    # 6 ряд: Сайт и Instagram
+    builder.row(InlineKeyboardButton(text="❓ Частые вопросы (FAQ)", callback_data="faq_menu"))
+
     builder.row(
-        InlineKeyboardButton(text="🌐 Сайт", url=BOOKING_WEBSITE_URL),
+        InlineKeyboardButton(text="🌐 Сайт", url="https://magiyalesa.by"),
         InlineKeyboardButton(text="📸 Instagram", url="https://www.instagram.com/magya_lesa/")
     )
 
-    # Контакты выносим по одной в ряд
     builder.row(InlineKeyboardButton(text="👩‍💼 Связаться с администратором", url="https://t.me/+375293139702"))
     builder.row(InlineKeyboardButton(text="📞 Связаться с управляющим", url="https://t.me/+375297200003"))
 
@@ -539,7 +532,8 @@ async def show_house_details(callback: types.CallbackQuery):
     )
 
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🌐 Забронировать на сайте", url=BOOKING_WEBSITE_URL))
+    # Открывает модуль бронирования прямо внутри Telegram
+    builder.row(InlineKeyboardButton(text="🏡 Забронировать", web_app=WebAppInfo(url=BOOKING_WEBSITE_URL)))
     builder.row(InlineKeyboardButton(text="⬅️ Назад к списку домов", callback_data="houses_menu"))
 
     try:
