@@ -301,6 +301,18 @@ async def process_back_main(callback: types.CallbackQuery):
 
 MEDIA_DIR = "media"
 
+
+def get_media_path(filename_or_path: str) -> str:
+    if os.path.exists(filename_or_path):
+        return filename_or_path
+    dirname, basename = os.path.split(filename_or_path)
+    search_dir = dirname if dirname else MEDIA_DIR
+    if os.path.exists(search_dir):
+        for f in os.listdir(search_dir):
+            if f.lower() == basename.lower():
+                return os.path.join(search_dir, f)
+    return filename_or_path
+
 HOUSES_INFO = {
     "house_standart": {
         "title": "🏡 Уютный Стандарт",
@@ -525,7 +537,7 @@ async def process_houses_menu(callback: types.CallbackQuery):
 @dp.callback_query(F.data.in_(HOUSES_INFO.keys()))
 async def show_house_details(callback: types.CallbackQuery):
     data = HOUSES_INFO[callback.data]
-    photo_path = data["photo"]
+    photo_path = get_media_path(data["photo"])
 
     text = (
         f"<b>{data['title']}</b>\n\n"
@@ -546,12 +558,22 @@ async def show_house_details(callback: types.CallbackQuery):
     try:
         photo = FSInputFile(photo_path) if os.path.exists(photo_path) else None
         if photo:
-            await callback.message.answer_photo(
-                photo=photo,
-                caption=text,
-                reply_markup=builder.as_markup(),
-                parse_mode="HTML"
-            )
+            # Лимит Telegram на подпись к фотографии (caption) составляет 1024 символа
+            if len(text) <= 1024:
+                await callback.message.answer_photo(
+                    photo=photo,
+                    caption=text,
+                    reply_markup=builder.as_markup(),
+                    parse_mode="HTML"
+                )
+            else:
+                # Если подробный текст превышает 1024 символа, отправляем фото и следом полный текст
+                await callback.message.answer_photo(photo=photo)
+                await callback.message.answer(
+                    text=text,
+                    reply_markup=builder.as_markup(),
+                    parse_mode="HTML"
+                )
         else:
             await callback.message.answer(
                 text=text,
